@@ -1,5 +1,3 @@
-drop table user_table;
-
 create or replace function downgrade_value(value int)
 	RETURNS integer
 	LANGUAGE plpgsql
@@ -13,20 +11,34 @@ RETURN (output);
 END;
 $function$;
 
+drop table  if exists user_table;
+drop table  if exists category;
+drop table  if exists product_table;
+drop table  if exists shopping_cart_table;
 
 --остальное:
-create table user_table(login varchar(100), password varchar(100), role varchar(100) DEFAULT "customer");
-create table category(id_category int PRAMARY KEY, name_category text);
+create table user_table( login varchar(100) PRIMARY KEY NOT NULL,
+                         password varchar(100) NOT NULL,
+                         role varchar(100) DEFAULT 'customer');
+
+create table category(id_category int PRIMARY KEY,
+                      name_category text NOT NULL);
 
 --для продавца:
-create table product_table(id_product int PRIMARY KEY, id_seller varchar(100),  product_name text,product_category text, product_description text not null default '-'::text,
-                           product_image bytea not null default "C:\Users\Egore\GolandProjects\Market-Bot\default_image.jpg",
-                           product_cost float4 not null default 0.0, product_availability int,FOREIGN KEY (id_seller) REFERENCES user_table(login),
-                           FOREIGN KEY (product_category) REFERENCES category(name_category));
+create table product_table(id_product int PRIMARY KEY,
+                           id_seller varchar(100) REFERENCES user_table(login) NOT NULL,
+                           product_name text NOT NULL,
+                           product_category_id int REFERENCES category(id_category) NOT NULL,
+                           product_description text not null default '-'::text,
+                           product_image bytea not null default 'https://github.com/io-qar/Market-Bot/blob/master/default_image.jpg?raw=true',
+                           product_cost float4 not null default 0.0,
+                           product_availability int NOT NULL);
 
 
 --для покупателя:
-create table shopping_cart_table(id_user varchar(100),id_product int,FOREIGN KEY (id_user) REFERENCES user_table(login),FOREIGN KEY (id_product) REFERENCES product_table(id_product));
+create table shopping_cart_table(id_cart int PRIMARY KEY,
+                                 id_user varchar(100) REFERENCES user_table(login),
+                                 id_product int REFERENCES product_table(id_product));
 
 
 
