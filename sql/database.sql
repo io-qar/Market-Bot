@@ -30,7 +30,7 @@ create table product_table(id_product int PRIMARY KEY,
                            product_name text NOT NULL,
                            product_category_id int REFERENCES category(id_category) NOT NULL,
                            product_description text not null default '-'::text,
-                           product_image bytea not null default 'https://github.com/io-qar/Market-Bot/blob/master/default_image.jpg?raw=true',
+                           product_image bytea not null default pg_read_binary_file('/imgs/default_image.jpg'),
                            product_cost float4 not null default 0.0,
                            product_availability int NOT NULL);
 
