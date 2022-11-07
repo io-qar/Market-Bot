@@ -1,10 +1,12 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
+	"github.com/joho/godotenv"
 	"github.com/yanzay/tbot/v2"
 	"log"
 	"os"
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -19,7 +21,16 @@ func CheckError(err error) {
 }
 
 func main() {
-	err := godotenv.Load(".env")
+	connStr := "user=postgres dbname=tg_bot password=1111 host=localhost sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	CheckError(err)
+	CheckError(err)
+	defer db.Close()
+	err = db.Ping()
+	CheckError(err)
+	fmt.Printf("\nSuccessfully connected to database!\n")
+
+	err = godotenv.Load(".env")
 	CheckError(err)
 
 	bot = tbot.New(os.Getenv("TOKEN"))
@@ -29,6 +40,7 @@ func main() {
 
 	err = bot.Start()
 	log.Fatal(err)
+
 }
 
 func startHandler(m *tbot.Message) {
