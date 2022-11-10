@@ -38,24 +38,26 @@ func ClientLogin(m *tbot.Message, password string, db *sql.DB) bool {
 }
 
 func CheckCorrectPass(str string) (bool, string) {
+	str += " "
 	dubl := 0 // еннн5667
 	thpair := str[0]
+	if len(str) < 6 {
+		return false, "Пароль короткий("
+	}
 	for i := 1; i < len(str); i++ {
 		thpair = str[i-1]
 		if str[i] == thpair {
 
 			dubl++
 			thpair = str[i]
-			fmt.Println(str[i])
+			//fmt.Println(str[i])
 		}
-	}
-	if dubl >= 2 {
-		return false, "У вас тут символы подряд повторяются..."
+		if string(str[i-1]) == " " {
+			return false, "В пароле не должно быть пробелов..."
+		}
 	}
 	if str == "" {
 		return false, "Пароль пустой!"
-	} else if len(str) < 6 {
-		return false, "Пароль короткий("
 	}
 
 	return true, "Хороший пароль, лайк!\nЗаношу в бд..."
