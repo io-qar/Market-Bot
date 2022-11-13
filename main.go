@@ -24,21 +24,8 @@ func CheckError(err error) {
 // 1014223178:AAFdXeKePaDixf9pK42lK3Co6W9vJQCHHnE
 // 5612522930:AAH3NoXrFB0_c0dpHUINJ3yhCkvjWPJ_3Gs ///////
 
-//var db *sql.DB
-//
-//func ConnectToDB() {
-//	var err error
-//	connStr := "user=postgres dbname=tg_bot password=1111 host=localhost sslmode=disable"
-//	db, err = sql.Open("postgres", connStr)
-//	CheckError(err)
-//	CheckError(err)
-//	defer db.Close()
-//	err = db.Ping()
-//	CheckError(err)
-//	fmt.Printf("\nSuccessfully connected to database!\n")
-//}
-
 func main() {
+	//	sql.ConnectToDB()
 	state = "START"
 	//ConnectToDB()
 	err := godotenv.Load(".env")
@@ -60,23 +47,61 @@ func badMessage(m *tbot.Message) {
 func stateHandler(m *tbot.Message) {
 	switch state {
 	case "START":
-	case "REG_TRANSITION":
-		registrationHandler(m)
+		if m.Text == "РЕГИСТРАЦИЯ" {
+			registrationHandler(m)
+		} else if m.Text == "ВХОД" {
+			loginHandler(m)
+		}
+	case "LOGIN":
+		checkPassHandler(m)
 	case "REG":
 		sendPasswHandler(m)
+	case "CLIENT_INTERFACE":
+		switch m.Text {
+		case "Выход":
+			state = "START"
+			client.SendMessage(m.Chat.ID, "Выход из аккаунта", tbot.OptReplyKeyboardMarkup(makeButtons("reg")))
+		case "Сменить роль":
+			client.SendMessage(m.Chat.ID, "Смена роли. Теперь вы продавец.", tbot.OptReplyKeyboardMarkup(makeButtons("seller_interface")))
+			state = "SELLER_INTERFACE"
+		}
+	case "SELLER_INTERFACE":
+		switch m.Text {
+		case "Выход":
+			state = "START"
+			client.SendMessage(m.Chat.ID, "Выход из аккаунта", tbot.OptReplyKeyboardMarkup(makeButtons("reg")))
+		case "Сменить роль":
+			client.SendMessage(m.Chat.ID, "Смена роли. Теперь вы покупатель.", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
+			state = "CLIENT_INTERFACE"
+		}
 	default:
 		client.SendMessage(m.Chat.ID, "а? Не понимаю...")
 	}
 }
 
+func loginHandler(m *tbot.Message) {
+	client.SendMessage(m.Chat.ID, "Введите пароль:", tbot.OptReplyKeyboardRemove)
+	state = "LOGIN"
+}
+
 func registrationHandler(m *tbot.Message) {
 	fmt.Println(m.Text)
-	client.SendMessage(m.Chat.ID, "Для регистрации, боту необходим ваш пароль. Длина пароля должна быть от шести символов и больше.\nПравильный ввод:\npass:your_password", tbot.OptReplyKeyboardRemove)
+	client.SendMessage(m.Chat.ID, "Для регистрации, боту необходим ваш пароль. Длина пароля должна быть от шести символов и больше.\nВведите пароль", tbot.OptReplyKeyboardRemove)
 	state = "REG"
-	//m.Text = ""
-	//sendPasswHandler(m)
-	//sendPasswHandler(m)
-	//sendPasswHandler(waitForMessage, m)
+}
+
+func checkPassHandler(m *tbot.Message) {
+	pass := m.Text
+	pass_from_bd := pass
+	// some chec bd log func
+	if pass == pass_from_bd {
+		client.SendMessage(m.Chat.ID, "Пароль верный!")
+		state = "CLIENT_INTERFACE"
+		customerInterfaceHandler(m)
+	} else {
+		client.SendMessage(m.Chat.ID, "Неправильный пароль")
+
+	}
 }
 
 func sendPasswHandler(m *tbot.Message) {
@@ -89,7 +114,7 @@ func sendPasswHandler(m *tbot.Message) {
 		fmt.Println("Ну и где переход")
 		client.SendMessage(m.Chat.ID, msg)
 		customerInterfaceHandler(m)
-		//	clientGo.ClientRegistration(m,pass,db)
+		//clientGo.ClientRegistration(m,pass,db)
 	}
 }
 
@@ -99,8 +124,6 @@ func customerInterfaceHandler(m *tbot.Message) {
 }
 
 func startHandler(m *tbot.Message) {
-	//fmt.Println(m.Text)
-	state = "REG_TRANSITION"
 	keyb := makeButtons("reg")
 	fmt.Println(keyb.Keyboard[0])
 	keyb.OneTimeKeyboard = true
@@ -123,6 +146,12 @@ func makeButtons(state string) *tbot.ReplyKeyboardMarkup {
 	button5 := tbot.KeyboardButton{
 		Text: "Корзина",
 	}
+	button6 := tbot.KeyboardButton{
+		Text: "Избранное",
+	}
+	button7 := tbot.KeyboardButton{
+		Text: "Сменить роль",
+	}
 	switch state {
 	case "reg":
 		return &tbot.ReplyKeyboardMarkup{
@@ -135,9 +164,17 @@ func makeButtons(state string) *tbot.ReplyKeyboardMarkup {
 		return &tbot.ReplyKeyboardMarkup{
 			ResizeKeyboard: true,
 			Keyboard: [][]tbot.KeyboardButton{
-				[]tbot.KeyboardButton{button3, button4, button5},
+				[]tbot.KeyboardButton{button3, button4, button5, button6, button7},
 			},
 		}
+	case "seller_interface":
+		return &tbot.ReplyKeyboardMarkup{
+			ResizeKeyboard: true,
+			Keyboard: [][]tbot.KeyboardButton{
+				[]tbot.KeyboardButton{button4, button7},
+			},
+		}
+
 	default:
 		return &tbot.ReplyKeyboardMarkup{
 			ResizeKeyboard: true,

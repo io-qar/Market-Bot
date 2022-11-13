@@ -1,3 +1,6 @@
+drop if exists database market-bot;
+create database market-bot;
+
 create or replace function downgrade_value(value int)
 	RETURNS integer
 	LANGUAGE plpgsql
@@ -10,7 +13,7 @@ output := value - 1;
 RETURN (output);
 END;
 $function$;
-create database market-bot;
+
 drop table  if exists user_table;
 drop table  if exists category;
 drop table  if exists product_table;
@@ -43,10 +46,3 @@ create table shopping_cart_table(id_cart int PRIMARY KEY,
 -- заполнение категорий товара:
 insert into category(name_category) values ('Одежда и обувь','Аксессуары к одежде','Бытовая техника','Электроника','Детские товары','Товары для хобби','Товары для дома и сада','Бытовая химия','Косметика','Косметика');
 
-
-
-
---insert into scientist (id, firstname, lastname) values (1, 'albert', 'einstein');
---insert into scientist (id, firstname, lastname) values (2, 'isaac', 'newton');
---insert into scientist (id, firstname, lastname) values (3, 'marie', 'curie');
---select * from scientist;
