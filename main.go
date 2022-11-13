@@ -12,6 +12,7 @@ import (
 var (
 	bot    *tbot.Server
 	client *tbot.Client
+	state  string
 )
 
 func CheckError(err error) {
@@ -38,55 +39,68 @@ func CheckError(err error) {
 //}
 
 func main() {
-
+	state = "START"
 	//ConnectToDB()
 	err := godotenv.Load(".env")
 	CheckError(err)
-
 	bot = tbot.New(os.Getenv("TOKEN"))
 	client = bot.Client()
 	bot.HandleMessage("/start", startHandler)
+	bot.HandleMessage(".+", stateHandler)
 	err = bot.Start()
 	log.Fatal(err)
 
 }
+
 func badMessage(m *tbot.Message) {
 	client.SendMessage(m.Chat.ID, "а? не понимаю....")
 	//	tbot.OptReplyKeyboardRemoveSelective()
 }
 
-func registrationHandler(m *tbot.Message) {
-	client.SendMessage(m.Chat.ID, "Для регистрации, боту необходим ваш пароль. Длина пароля должна быть от шести символов и больше.\nПравильный ввод:\npass:your_password", tbot.OptReplyKeyboardRemove)
-	bot.HandleMessage(".+", sendPasswHandler)
+func stateHandler(m *tbot.Message) {
+	switch state {
+	case "START":
+	case "REG_TRANSITION":
+		registrationHandler(m)
+	case "REG":
+		sendPasswHandler(m)
+	default:
+		client.SendMessage(m.Chat.ID, "а? Не понимаю...")
+	}
+}
 
+func registrationHandler(m *tbot.Message) {
+	fmt.Println(m.Text)
+	client.SendMessage(m.Chat.ID, "Для регистрации, боту необходим ваш пароль. Длина пароля должна быть от шести символов и больше.\nПравильный ввод:\npass:your_password", tbot.OptReplyKeyboardRemove)
+	state = "REG"
+	//m.Text = ""
+	//sendPasswHandler(m)
+	//sendPasswHandler(m)
+	//sendPasswHandler(waitForMessage, m)
 }
 
 func sendPasswHandler(m *tbot.Message) {
 	pass := m.Text
 	check, msg := clientGo.CheckCorrectPass(pass)
-
 	if check == false {
 		msg = msg + "\nПридумайте получше:"
 		client.SendMessage(m.Chat.ID, msg)
-		//bot.HandleMessage(".+", sendPasswHandler)
-
 	} else {
 		fmt.Println("Ну и где переход")
 		client.SendMessage(m.Chat.ID, msg)
 		customerInterfaceHandler(m)
-
-		return
 		//	clientGo.ClientRegistration(m,pass,db)
 	}
 }
 
 func customerInterfaceHandler(m *tbot.Message) {
 	client.SendMessage(m.Chat.ID, "Да да вы покупатель, а текст этого сообщения не доделан", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
-	//bot.HandleMessage(".+", customerInterfaceHandler)
+	state = "CLIENT_INTERFACE"
 }
 
 func startHandler(m *tbot.Message) {
-	bot.HandleMessage("РЕГИСТРАЦИЯ", registrationHandler)
+	//fmt.Println(m.Text)
+	state = "REG_TRANSITION"
 	keyb := makeButtons("reg")
 	fmt.Println(keyb.Keyboard[0])
 	keyb.OneTimeKeyboard = true
