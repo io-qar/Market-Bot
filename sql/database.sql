@@ -26,7 +26,8 @@ create table user_table( login varchar(100) PRIMARY KEY NOT NULL,
                          role varchar(100) DEFAULT 'customer');
 
 create table category(id_category serial,
-                      name_category text NOT NULL PRIMARY KEY);
+                      name_category text NOT NULL PRIMARY KEY,
+                      number_of_product_ads int default 0);
 
 --для продавца:
 create table product_table(id_product int PRIMARY KEY,
