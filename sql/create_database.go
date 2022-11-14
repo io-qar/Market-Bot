@@ -4,29 +4,22 @@ import (
 	"Market-Bot/models"
 
 	"github.com/joho/godotenv"
+	"github.com/jackc/pgx/v5"
 
-	"database/sql"
-	"fmt"
+	"context"
 	"os"
 )
 
 func ConnectToDB() {
-	err := godotenv.Load("../.env")
+	err := godotenv.Load(".env")
 	models.CheckError(err)
 
-	var (
-		dbUser string = os.Getenv("USER")
-		dbName string = os.Getenv("DBNAME")
-		dbPassword string = os.Getenv("PASSWORD")
-		dbHost string = os.Getenv("HOST")
-		dbMode string = os.Getenv("MODE")
-	)
+	var dbURL string = os.Getenv("URL")
 
-	connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s sslmode=%s", dbUser, dbName, dbPassword, dbHost, dbMode)
-	db, err := sql.Open("postgres", connStr)
+	db, err := pgx.Connect(context.Background(), dbURL)
 	models.CheckError(err)
-	defer db.Close()
-	err = db.Ping()
+	defer db.Close(context.Background())
+	err = db.Ping(context.Background())
 	models.CheckError(err)
-	fmt.Printf("\nSuccessfully connected to database!\n")
+	println("Successfully connected to database!")
 }

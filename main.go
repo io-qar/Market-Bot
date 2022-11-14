@@ -6,6 +6,7 @@ import (
 
 	"Market-Bot/clientGo"
 	"Market-Bot/models"
+	"Market-Bot/sql"
 
 	"fmt"
 	"log"
@@ -24,8 +25,7 @@ type user struct {
 }
 
 func main() {
-	//	sql.ConnectToDB()
-	//ConnectToDB()
+	sql.ConnectToDB()
 
 	err := godotenv.Load(".env")
 	models.CheckError(err)
