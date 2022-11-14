@@ -20,14 +20,14 @@ type user struct {
 	state    string
 }
 
+// 1014223178:AAFdXeKePaDixf9pK42lK3Co6W9vJQCHHnE
+// 5612522930:AAH3NoXrFB0_c0dpHUINJ3yhCkvjWPJ_3Gs ///////
+
 func CheckError(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
-
-// 1014223178:AAFdXeKePaDixf9pK42lK3Co6W9vJQCHHnE
-// 5612522930:AAH3NoXrFB0_c0dpHUINJ3yhCkvjWPJ_3Gs ///////
 
 func main() {
 	//	sql.ConnectToDB()

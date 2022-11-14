@@ -5,11 +5,6 @@ import (
 	"fmt"
 )
 
-func CheckError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
 func ConnectToDB() {
 	connStr := "user=postgres dbname=tg_bot password=1111 host=localhost sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
