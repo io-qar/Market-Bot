@@ -1,10 +1,13 @@
 package main
 
 import (
-	"Market-Bot/clientGo"
-	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/yanzay/tbot/v2"
+
+	"Market-Bot/clientGo"
+	"Market-Bot/models"
+
+	"fmt"
 	"log"
 	"os"
 )
@@ -20,21 +23,12 @@ type user struct {
 	state    string
 }
 
-// 1014223178:AAFdXeKePaDixf9pK42lK3Co6W9vJQCHHnE
-// 5612522930:AAH3NoXrFB0_c0dpHUINJ3yhCkvjWPJ_3Gs ///////
-
-func CheckError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func main() {
 	//	sql.ConnectToDB()
 	//ConnectToDB()
 
 	err := godotenv.Load(".env")
-	CheckError(err)
+	models.CheckError(err)
 	bot = tbot.New(os.Getenv("TOKEN"))
 	client = bot.Client()
 
@@ -42,7 +36,6 @@ func main() {
 	bot.HandleMessage(".+", stateHandler)
 	err = bot.Start()
 	log.Fatal(err)
-
 }
 
 func stateHandler(m *tbot.Message) {
