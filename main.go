@@ -12,8 +12,13 @@ import (
 var (
 	bot    *tbot.Server
 	client *tbot.Client
-	state  string
+	state  = map[string]string{}
 )
+
+type user struct {
+	username string
+	state    string
+}
 
 func CheckError(err error) {
 	if err != nil {
@@ -26,12 +31,13 @@ func CheckError(err error) {
 
 func main() {
 	//	sql.ConnectToDB()
-	state = "START"
 	//ConnectToDB()
+
 	err := godotenv.Load(".env")
 	CheckError(err)
 	bot = tbot.New(os.Getenv("TOKEN"))
 	client = bot.Client()
+
 	bot.HandleMessage("/start", startHandler)
 	bot.HandleMessage(".+", stateHandler)
 	err = bot.Start()
@@ -39,18 +45,16 @@ func main() {
 
 }
 
-func badMessage(m *tbot.Message) {
-	client.SendMessage(m.Chat.ID, "а? не понимаю....")
-	//	tbot.OptReplyKeyboardRemoveSelective()
-}
-
 func stateHandler(m *tbot.Message) {
-	switch state {
+	switch state[m.From.Username] {
 	case "START":
-		if m.Text == "РЕГИСТРАЦИЯ" {
+		switch m.Text {
+		case "РЕГИСТРАЦИЯ":
 			registrationHandler(m)
-		} else if m.Text == "ВХОД" {
+		case "ВХОД":
 			loginHandler(m)
+		default:
+			client.SendMessage(m.Chat.ID, "а? Не понимаю...")
 		}
 	case "LOGIN":
 		checkPassHandler(m)
@@ -59,20 +63,28 @@ func stateHandler(m *tbot.Message) {
 	case "CLIENT_INTERFACE":
 		switch m.Text {
 		case "Выход":
-			state = "START"
+			state[m.From.Username] = "START"
 			client.SendMessage(m.Chat.ID, "Выход из аккаунта", tbot.OptReplyKeyboardMarkup(makeButtons("reg")))
+			client.SendSticker(m.Chat.ID, "CAACAgIAAxkBAAEGaxFjclj9sC5c8pPkx1YpjaH0l9BHtQACARUAAn3WYUhaT836O4P01isE")
 		case "Сменить роль":
 			client.SendMessage(m.Chat.ID, "Смена роли. Теперь вы продавец.", tbot.OptReplyKeyboardMarkup(makeButtons("seller_interface")))
-			state = "SELLER_INTERFACE"
+			state[m.From.Username] = "SELLER_INTERFACE"
+		case "Категории товаров":
+			client.SendMessage(m.Chat.ID, "Ну тут кароч будут категории в виде кнопок, еще в каждой категории указывается количество существующих объявлений")
+		case "Корзина":
+			client.SendMessage(m.Chat.ID, "Ваши товары:", tbot.OptReplyKeyboardMarkup(makeButtons("customer_shopping_cart")))
+		case "Назад":
+			client.SendMessage(m.Chat.ID, "Обратно к интерфейсу...", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
 		}
 	case "SELLER_INTERFACE":
 		switch m.Text {
 		case "Выход":
-			state = "START"
+			state[m.From.Username] = "START"
 			client.SendMessage(m.Chat.ID, "Выход из аккаунта", tbot.OptReplyKeyboardMarkup(makeButtons("reg")))
+			client.SendSticker(m.Chat.ID, "CAACAgIAAxkBAAEGaxFjclj9sC5c8pPkx1YpjaH0l9BHtQACARUAAn3WYUhaT836O4P01isE")
 		case "Сменить роль":
 			client.SendMessage(m.Chat.ID, "Смена роли. Теперь вы покупатель.", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
-			state = "CLIENT_INTERFACE"
+			state[m.From.Username] = "CLIENT_INTERFACE"
 		}
 	default:
 		client.SendMessage(m.Chat.ID, "а? Не понимаю...")
@@ -81,13 +93,13 @@ func stateHandler(m *tbot.Message) {
 
 func loginHandler(m *tbot.Message) {
 	client.SendMessage(m.Chat.ID, "Введите пароль:", tbot.OptReplyKeyboardRemove)
-	state = "LOGIN"
+	state[m.From.Username] = "LOGIN"
 }
 
 func registrationHandler(m *tbot.Message) {
 	fmt.Println(m.Text)
 	client.SendMessage(m.Chat.ID, "Для регистрации, боту необходим ваш пароль. Длина пароля должна быть от шести символов и больше.\nВведите пароль", tbot.OptReplyKeyboardRemove)
-	state = "REG"
+	state[m.From.Username] = "REG"
 }
 
 func checkPassHandler(m *tbot.Message) {
@@ -96,7 +108,7 @@ func checkPassHandler(m *tbot.Message) {
 	// some chec bd log func
 	if pass == pass_from_bd {
 		client.SendMessage(m.Chat.ID, "Пароль верный!")
-		state = "CLIENT_INTERFACE"
+		state[m.From.Username] = "CLIENT_INTERFACE"
 		customerInterfaceHandler(m)
 	} else {
 		client.SendMessage(m.Chat.ID, "Неправильный пароль")
@@ -120,10 +132,12 @@ func sendPasswHandler(m *tbot.Message) {
 
 func customerInterfaceHandler(m *tbot.Message) {
 	client.SendMessage(m.Chat.ID, "Да да вы покупатель, а текст этого сообщения не доделан", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
-	state = "CLIENT_INTERFACE"
+	client.SendSticker(m.Chat.ID, "CAACAgIAAxkBAAEGaxNjcllRH0z0TqnjUA5zl5Otm0tkvwACwhUAAlAdSUhTlP1Qw1XqOCsE")
+	state[m.From.Username] = "CLIENT_INTERFACE"
 }
 
 func startHandler(m *tbot.Message) {
+	state[m.From.Username] = "START"
 	keyb := makeButtons("reg")
 	fmt.Println(keyb.Keyboard[0])
 	keyb.OneTimeKeyboard = true
@@ -152,6 +166,15 @@ func makeButtons(state string) *tbot.ReplyKeyboardMarkup {
 	button7 := tbot.KeyboardButton{
 		Text: "Сменить роль",
 	}
+	button8 := tbot.KeyboardButton{
+		Text: "Купить товары",
+	}
+	button9 := tbot.KeyboardButton{
+		Text: "Удалить товары",
+	}
+	button10 := tbot.KeyboardButton{
+		Text: "Назад",
+	}
 	switch state {
 	case "reg":
 		return &tbot.ReplyKeyboardMarkup{
@@ -174,7 +197,13 @@ func makeButtons(state string) *tbot.ReplyKeyboardMarkup {
 				[]tbot.KeyboardButton{button4, button7},
 			},
 		}
-
+	case "customer_shopping_cart":
+		return &tbot.ReplyKeyboardMarkup{
+			ResizeKeyboard: true,
+			Keyboard: [][]tbot.KeyboardButton{
+				[]tbot.KeyboardButton{button8, button9, button10},
+			},
+		}
 	default:
 		return &tbot.ReplyKeyboardMarkup{
 			ResizeKeyboard: true,
