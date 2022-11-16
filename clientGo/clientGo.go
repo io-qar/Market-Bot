@@ -1,7 +1,8 @@
 package clientGo
 
 import (
-	"database/sql"
+	"Market-Bot/sql"
+	"context"
 	"fmt"
 	"github.com/yanzay/tbot/v2"
 )
@@ -9,18 +10,46 @@ import (
 //данный файл только для вноса данних юзера после регистрации
 // вообще пока что это все примерно и временно
 
-func ClientRegistration(m *tbot.Message, password string, db *sql.DB) {
-	_, err := db.Exec("INSERT INTO user_table(login,password) values ($1,$2)", m.From.ID, m.Text)
+func DeleteAcc(m *tbot.Message) {
+	_, err := sql.Db.Exec(context.Background(), `
+	DELETE FROM user_table where login=$1`, m.From.Username)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func ClientLogin(m *tbot.Message, password string, db *sql.DB) bool {
+func ChangePassword(m *tbot.Message) {
+	_, err := sql.Db.Exec(context.Background(), `
+	UPDATE user_table SET password=$1 WHERE login=$2;`, m.Text, m.From.Username)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func LoginCheck(m *tbot.Message) (bool, string) {
+	var check bool
+	if err := sql.Db.QueryRow(context.Background(), "select exists(select 1 from user_table where login = $1)",
+		m.From.Username).Scan(&check); err != nil {
+	}
+	if check {
+		return false, ""
+	}
+
+	return true, ".."
+}
+
+func ClientRegistration(m *tbot.Message) {
+	_, err := sql.Db.Exec(context.Background(), `INSERT INTO user_table(login,password) values ($1,$2)`, m.From.Username, m.Text)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ClientLogin(m *tbot.Message, password string) bool {
 	pass_from_db := ""
-	if err := db.QueryRow("SELECT (password) from user_table where login = $1",
-		m.From.ID).Scan(&pass_from_db); err != nil {
-		if err == sql.ErrNoRows {
+	if err := sql.Db.QueryRow(context.Background(), "SELECT (password) from user_table where login = $1",
+		m.From.Username).Scan(&pass_from_db); err != nil {
+		if err == nil {
 			fmt.Println("Нет такого логина")
 		}
 		if pass_from_db == "" {

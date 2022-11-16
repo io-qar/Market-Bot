@@ -1,5 +1,6 @@
-drop if exists database market-bot;
-create database market-bot;
+
+
+
 
 create or replace function downgrade_value(value int)
 	RETURNS integer
@@ -45,5 +46,14 @@ create table shopping_cart_table(id_cart int PRIMARY KEY,
                                  id_product int REFERENCES product_table(id_product));
 
 -- заполнение категорий товара:
-insert into category(name_category) values ('Одежда и обувь','Аксессуары к одежде','Бытовая техника','Электроника','Детские товары','Товары для хобби','Товары для дома и сада','Бытовая химия','Косметика','Косметика');
+insert into category(name_category) values ('Одежда и обувь');
+insert into category(name_category) values ('Аксессуары к одежде');
+insert into category(name_category) values ('Бытовая техника');
+insert into category(name_category) values ('Электроника');
+insert into category(name_category) values ('Детские товары');
+insert into category(name_category) values ('Товары для хобби');
+insert into category(name_category) values ('Товары для дома и сада');
+insert into category(name_category) values ('Бытовая химия');
+insert into category(name_category) values ('Косметика');
+
 
