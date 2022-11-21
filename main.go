@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Market-Bot/clientGo/customer"
 	"github.com/joho/godotenv"
 	"github.com/yanzay/tbot/v2"
 
@@ -27,6 +28,7 @@ type user struct {
 func main() {
 	sql.ConnectToDB()
 	sql.CreateDataBase()
+
 	err := godotenv.Load(".env")
 	models.CheckError(err)
 	bot = tbot.New(os.Getenv("TOKEN"))
@@ -85,6 +87,7 @@ func stateHandler(m *tbot.Message) {
 			state[m.From.Username] = "SELLER_INTERFACE"
 		case "Категории товаров":
 			client.SendMessage(m.Chat.ID, "Ну тут кароч будут категории в виде кнопок, еще в каждой категории указывается количество существующих объявлений")
+			customer.ClientShowCategory(m, client, bot)
 		case "Корзина":
 			client.SendMessage(m.Chat.ID, "Ваши товары:", tbot.OptReplyKeyboardMarkup(makeButtons("customer_shopping_cart")))
 		case "Настройки":
