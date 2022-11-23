@@ -1,26 +1,26 @@
 package clientGo
 
 import (
+	"github.com/yanzay/tbot/v2"
+
 	"Market-Bot/sql"
+
 	"context"
 	"fmt"
-	"github.com/yanzay/tbot/v2"
 )
 
 //данный файл только для вноса данних юзера после регистрации
 // вообще пока что это все примерно и временно
 
 func DeleteAcc(m *tbot.Message) {
-	_, err := sql.Db.Exec(context.Background(), `
-	DELETE FROM user_table where login=$1`, m.From.Username)
+	_, err := sql.Db.Exec(context.Background(), `delete from user_table where login=$1`, m.From.Username)
 	if err != nil {
 		panic(err)
 	}
 }
 
 func ChangePassword(m *tbot.Message) {
-	_, err := sql.Db.Exec(context.Background(), `
-	UPDATE user_table SET password=$1 WHERE login=$2;`, m.Text, m.From.Username)
+	_, err := sql.Db.Exec(context.Background(), `UPDATE user_table SET password=$1 WHERE login=$2;`, m.Text, m.From.Username)
 	if err != nil {
 		panic(err)
 	}
@@ -49,14 +49,14 @@ func ClientLogin(m *tbot.Message, password string) bool {
 	pass_from_db := ""
 	if err := sql.Db.QueryRow(context.Background(), "SELECT (password) from user_table where login = $1",
 		m.From.Username).Scan(&pass_from_db); err != nil {
-		if err == nil {
+			if pass_from_db == "" {
+				fmt.Println("Пароль пустой")
+				return false
+			}
+		} else {
 			fmt.Println("Нет такого логина")
 		}
-		if pass_from_db == "" {
-			fmt.Println("Пароль пустой")
-			return false
-		}
-	}
+
 	if password == pass_from_db {
 		fmt.Println("Зашел удачно")
 		return true
@@ -76,7 +76,6 @@ func CheckCorrectPass(str string) (bool, string) {
 	for i := 1; i < len(str); i++ {
 		thpair = str[i-1]
 		if str[i] == thpair {
-
 			dubl++
 			thpair = str[i]
 			//fmt.Println(str[i])
@@ -88,6 +87,6 @@ func CheckCorrectPass(str string) (bool, string) {
 	if str == "" {
 		return false, "Пароль пустой!"
 	}
-
+	
 	return true, "Хороший пароль, лайк!\nЗаношу в бд..."
 }

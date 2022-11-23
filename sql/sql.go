@@ -1,9 +1,9 @@
 package sql
 
 import (
-	"context"
-	"fmt"
 	"github.com/yanzay/tbot/v2"
+
+	"context"
 )
 
 func GetContext() (context.Context, context.CancelFunc) {
@@ -14,6 +14,5 @@ func GetContext() (context.Context, context.CancelFunc) {
 }
 
 func categoryProductShow(category string, m *tbot.Message) {
-	fmt.Println("asffqfqe")
-
+	println("asffqfqe")
 }

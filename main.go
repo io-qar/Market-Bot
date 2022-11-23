@@ -48,13 +48,12 @@ func stateHandler(m *tbot.Message) {
 			registrationHandler(m)
 		case "ВХОД":
 			check, _ := clientGo.LoginCheck(m)
-			if check == false {
+			if !check {
 				loginHandler(m)
 			} else {
 				client.SendMessage(m.Chat.ID, "Мне тут по секрету сказали, что вас нету в базе...", tbot.OptReplyKeyboardMarkup(makeButtons("reg")))
 				state[m.From.Username] = "START"
 			}
-
 		default:
 			client.SendMessage(m.Chat.ID, "а? Не понимаю...")
 		}
@@ -68,9 +67,8 @@ func stateHandler(m *tbot.Message) {
 		switch m.Text {
 		case "Yes":
 			clientGo.DeleteAcc(m)
-			client.SendMessage(m.Chat.ID, "Аккаунт удален!", tbot.OptReplyKeyboardMarkup(makeButtons("reg")))
+			client.SendMessage(m.Chat.ID, "Аккаунт удалён!", tbot.OptReplyKeyboardMarkup(makeButtons("reg")))
 			client.SendSticker(m.Chat.ID, "CAACAgIAAxkBAAEGcoRjdS_QjsmJSpkAAbp4s8mYIA6XkqUAAkcUAALd3YBKLVp8NfRstaIrBA")
-
 			state[m.From.Username] = "START"
 		case "NO":
 			client.SendMessage(m.Chat.ID, "Ну.. Ладно..", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
@@ -131,30 +129,28 @@ func registrationHandler(m *tbot.Message) {
 		client.SendMessage(m.Chat.ID, "С таким логином уже регистрировались", tbot.OptReplyKeyboardMarkup(makeButtons("reg")))
 		state[m.From.Username] = "START"
 	}
-
 }
 
 func checkPassHandler(m *tbot.Message) {
 	pass := m.Text
 	check := clientGo.ClientLogin(m, pass)
-	if check == true {
+	if check {
 		client.SendMessage(m.Chat.ID, "Пароль верный!")
 		state[m.From.Username] = "CLIENT_INTERFACE"
 		customerInterfaceHandler(m)
 	} else {
 		client.SendMessage(m.Chat.ID, "Неправильный пароль")
-
 	}
 }
 
 func sendPasswHandler(m *tbot.Message) {
 	pass := m.Text
 	check, msg := clientGo.CheckCorrectPass(pass)
-	if check == false {
-		msg = msg + "\nПридумайте получше:"
+	if !check {
+		msg += "\nПридумайте получше:"
 		client.SendMessage(m.Chat.ID, msg)
 	} else {
-		fmt.Println("Ну и где переход")
+		println("Ну и где переход")
 		client.SendMessage(m.Chat.ID, msg)
 		clientGo.ClientRegistration(m)
 		customerInterfaceHandler(m)
@@ -164,8 +160,8 @@ func sendPasswHandler(m *tbot.Message) {
 func changePasswHandler(m *tbot.Message) {
 	pass := m.Text
 	check, msg := clientGo.CheckCorrectPass(pass)
-	if check == false {
-		msg = msg + "\nПридумайте получше:"
+	if !check {
+		msg += "\nПридумайте получше:"
 		client.SendMessage(m.Chat.ID, msg)
 	} else {
 		fmt.Println("Ну и где переход")
