@@ -18,7 +18,7 @@ func GetCategory() []models.Chosen_Category {
 	rows, err := sql.Db.Query(context.Background(), `select * from category`)
 	for rows.Next() {
 		err = rows.Scan(&c.Number, &c.Name, &c.Ads_score)
-		categorySl = append(categorySl, models.Chosen_Category {
+		categorySl = append(categorySl, models.Chosen_Category{
 			Category_info: (strconv.Itoa(c.Number) + ". " + c.Name + "(" + strconv.Itoa(c.Ads_score) + ")"),
 			Chosen:        c.Name,
 		})
@@ -29,10 +29,24 @@ func GetCategory() []models.Chosen_Category {
 	return categorySl
 }
 
+func ClientShowOrderProduct(m *tbot.Message, client *tbot.Client, bot *tbot.Server) {
+	check, productSl := sql.ClientOrderShow(m.Chat.Username)
+	if check {
+		for _, v := range productSl {
+			_, err := client.SendPhotoFile(m.Chat.ID, v.Product_image, tbot.OptFoursquareID(strconv.Itoa(v.Id_product)),
+				tbot.OptCaption("Номер продукта: "+strconv.Itoa(v.Id_product)+"\nЛогин продавца: "+v.Id_seller+"\nНазвание продукта: "+v.Product_name+"\nКатегория продукта: "+v.Product_category+"\nОписание продукта: "+v.Product_description+"\nЦена продукта: "+strconv.Itoa(v.Product_cost)+"\nВ наличии: "+strconv.Itoa(v.Product_availability)))
+			models.CheckError(err)
+		}
+		return
+	}
+	client.SendMessage(m.Chat.ID, "Вы еще ничего не покупали")
+}
+
 func ClientShowCategory(m *tbot.Message, client *tbot.Client, bot *tbot.Server) {
 	categorySl := GetCategory()
 	fmt.Println(categorySl)
-	bot.HandleCallback(callbackCategoryHandler)
+	app := &Application{client: client}
+	bot.HandleCallback(app.callbackCategoryHandler)
 	_, err := client.SendMessage(m.Chat.ID, "Категории товаров:", tbot.OptInlineKeyboardMarkup(makeCategoryButtons(categorySl)))
 	if err != nil {
 		panic(err)
@@ -41,14 +55,64 @@ func ClientShowCategory(m *tbot.Message, client *tbot.Client, bot *tbot.Server) 
 
 }
 
-func callbackCategoryHandler(cq *tbot.CallbackQuery) {
-	switch cq.Data {
-	case "Одежда и обувь":
-		//client.SendMessage(m.Chat.ID, "ОК..", tbot.OptInlineKeyboardMarkup(deleteCategoryButtons()))
-		//categoryProductShow(cq.Data, m)
+type Application struct {
+	client *tbot.Client
+}
 
-		//client.EditMessageReplyMarkup(cq.Message.Chat.ID, cq.Message.MessageID, tbot.OptInlineKeyboardMarkup(deleteCategoryButtons()))
-	case "Аксессуары к одежде":
+func ClientBuyAllProduct(m *tbot.Message, client *tbot.Client, bot *tbot.Server) {
+	check := sql.ClientBuy(m.From.Username)
+	if check {
+		sql.DeleteAllProducts("Корзина", m.From.Username)
+		client.SendSticker(m.Chat.ID, "CAACAgIAAxkBAAEGqr1ji5Nax0hzev6QZMy6X0-1AlPJ0gACrRgAAnmFiUi3haSlMSLa5SsE")
+		client.SendMessage(m.Chat.ID, "Товары куплены")
+		return
+	}
+	client.SendMessage(m.Chat.ID, "Ваша корзина пуста")
+	return
+}
+
+func ClientDeleteAllProductsFromCart(m *tbot.Message, client *tbot.Client, bot *tbot.Server) {
+	sql.DeleteAllProducts("Корзина", m.From.Username)
+	//client.SendAnimation(m.Chat.ID, "./imgs/ryan-gosling.gif")
+	client.SendAnimationFile(m.Chat.ID, "./imgs/ryan-gosling.gif", tbot.OptCaption("Товары удалины из корзины"))
+	//	client.SendMessage(m.Chat.ID, "Товары удалины из корзины")
+
+}
+
+//var p models.ProductId
+func (a *Application) callbackCategoryHandler(cq *tbot.CallbackQuery) {
+	//p models.ProductId{
+	//	Id_product: id_product,
+	//	Id_user:    ,
+	//}
+	switch cq.Data {
+	case "Добавить в корзину":
+		id := sql.GetIdProductFromMessage(cq.Message.Caption)
+		if id == "" {
+			a.client.SendMessage(cq.Message.Chat.ID, "Данного товара нет в наличии.")
+			a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("out of range"))
+			return
+		}
+		fmt.Println("\nid", id)
+		sql.AddToCart(id, cq.From.Username)
+		text := sql.UpdateMessage(id)
+		a.client.EditMessageCaption(cq.Message.Chat.ID, cq.Message.MessageID, text, tbot.OptInlineKeyboardMarkup(sql.MakeButtonsAddProduct()))
+		a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("OK"))
+		return
+	case "Удалить товар":
+		id := sql.GetIdProductFromMessageCart(cq.Message.Caption)
+		if id == "" {
+			a.client.SendMessage(cq.Message.Chat.ID, "Данного товара нет в наличии.")
+			a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("out of range"))
+			return
+		}
+		sql.DeleteOneProduct("Корзина", id, cq.From.Username)
+		a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
+		a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("OK"))
+	default:
+		sql.CategoryProductShow(cq.Data, cq.Message, a.client)
+		a.client.EditMessageReplyMarkup(cq.Message.Chat.ID, cq.Message.MessageID, tbot.OptInlineKeyboardMarkup(deleteCategoryButtons()))
+		a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("OK"))
 	}
 }
 
@@ -58,8 +122,8 @@ func makeCategoryButtons(variable []models.Chosen_Category) *tbot.InlineKeyboard
 		buttons[i].Text = v.Category_info
 		buttons[i].CallbackData = v.Chosen
 	}
-	return &tbot.InlineKeyboardMarkup {
-		InlineKeyboard: [][]tbot.InlineKeyboardButton {
+	return &tbot.InlineKeyboardMarkup{
+		InlineKeyboard: [][]tbot.InlineKeyboardButton{
 			[]tbot.InlineKeyboardButton{buttons[0], buttons[1]},
 			[]tbot.InlineKeyboardButton{buttons[2], buttons[3]},
 			[]tbot.InlineKeyboardButton{buttons[4], buttons[5]},
@@ -71,7 +135,7 @@ func makeCategoryButtons(variable []models.Chosen_Category) *tbot.InlineKeyboard
 
 func deleteCategoryButtons() *tbot.InlineKeyboardMarkup {
 	button1 := tbot.InlineKeyboardButton{
-		Text:         fmt.Sprintf(""),
+		Text:         fmt.Sprintf("OK"),
 		CallbackData: "",
 	}
 	return &tbot.InlineKeyboardMarkup{

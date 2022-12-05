@@ -1,9 +1,12 @@
 package main
 
+//go get github.com/georgysavva/scany/v2
 import (
 	"Market-Bot/clientGo/customer"
 	"github.com/joho/godotenv"
 	"github.com/yanzay/tbot/v2"
+	"io"
+	"net/http"
 
 	"Market-Bot/clientGo"
 	"Market-Bot/models"
@@ -36,6 +39,31 @@ func main() {
 
 	bot.HandleMessage("/start", startHandler)
 	bot.HandleMessage(".+", stateHandler)
+	bot.HandleMessage("", func(m *tbot.Message) {
+		if m.Document != nil {
+			doc, err := client.GetFile(m.Document.FileID)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			url := client.FileURL(doc)
+			resp, err := http.Get(url)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			defer resp.Body.Close()
+			err = os.Chdir("./imgs")
+			out, err := os.Create(m.Document.FileName)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			defer out.Close()
+			io.Copy(out, resp.Body)
+			fmt.Println(out, resp)
+		}
+	})
 	err = bot.Start()
 	log.Fatal(err)
 }
@@ -74,7 +102,17 @@ func stateHandler(m *tbot.Message) {
 			client.SendMessage(m.Chat.ID, "Ну.. Ладно..", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
 			state[m.From.Username] = "CLIENT_INTERFACE"
 		}
-	case "CLIENT_INTERFACE":
+	case "CLIENT_CART":
+		switch m.Text {
+		case "Удалить товары":
+			customer.ClientDeleteAllProductsFromCart(m, client, bot)
+		case "Назад":
+			state[m.From.Username] = "CLIENT_INTERFACE"
+			client.SendMessage(m.Chat.ID, "Обратно к интерфейсу...", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
+		case "Купить товары":
+			customer.ClientBuyAllProduct(m, client, bot)
+		}
+	case "CLIENT_SETTINGS":
 		switch m.Text {
 		case "Выход":
 			state[m.From.Username] = "START"
@@ -83,13 +121,6 @@ func stateHandler(m *tbot.Message) {
 		case "Сменить роль":
 			client.SendMessage(m.Chat.ID, "Смена роли. Теперь вы продавец.", tbot.OptReplyKeyboardMarkup(makeButtons("seller_interface")))
 			state[m.From.Username] = "SELLER_INTERFACE"
-		case "Категории товаров":
-			client.SendMessage(m.Chat.ID, "Ну тут кароч будут категории в виде кнопок, еще в каждой категории указывается количество существующих объявлений")
-			customer.ClientShowCategory(m, client, bot)
-		case "Корзина":
-			client.SendMessage(m.Chat.ID, "Ваши товары:", tbot.OptReplyKeyboardMarkup(makeButtons("customer_shopping_cart")))
-		case "Настройки":
-			client.SendMessage(m.Chat.ID, "Настройки", tbot.OptReplyKeyboardMarkup(makeButtons("customer_settings")))
 		case "Изменить пароль":
 			client.SendMessage(m.Chat.ID, "Введите пароль", tbot.OptReplyKeyboardRemove)
 			state[m.From.Username] = "CHANGE_PASS"
@@ -98,6 +129,22 @@ func stateHandler(m *tbot.Message) {
 			state[m.From.Username] = "DELETE_ACC"
 		case "Назад":
 			client.SendMessage(m.Chat.ID, "Обратно к интерфейсу...", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
+			state[m.From.Username] = "CLIENT_INTERFACE"
+		}
+	case "CLIENT_INTERFACE":
+		switch m.Text {
+		case "Купленные товары":
+			customer.ClientShowOrderProduct(m, client, bot)
+		case "Категории товаров":
+			client.SendMessage(m.Chat.ID, "Ну тут кароч будут категории в виде кнопок, еще в каждой категории указывается количество существующих объявлений")
+			customer.ClientShowCategory(m, client, bot)
+		case "Корзина":
+			client.SendMessage(m.Chat.ID, "Ваши товары:", tbot.OptReplyKeyboardMarkup(makeButtons("customer_shopping_cart")))
+			sql.ClientShowCart(m, client, bot)
+			state[m.From.Username] = "CLIENT_CART"
+		case "Настройки":
+			state[m.From.Username] = "CLIENT_SETTINGS"
+			client.SendMessage(m.Chat.ID, "Настройки", tbot.OptReplyKeyboardMarkup(makeButtons("customer_settings")))
 		}
 	case "SELLER_INTERFACE":
 		switch m.Text {
@@ -231,6 +278,9 @@ func makeButtons(state string) *tbot.ReplyKeyboardMarkup {
 	button15 := tbot.KeyboardButton{
 		Text: "NO",
 	}
+	button16 := tbot.KeyboardButton{
+		Text: "Купленные товары",
+	}
 	switch state {
 	case "reg":
 		return &tbot.ReplyKeyboardMarkup{
@@ -243,7 +293,9 @@ func makeButtons(state string) *tbot.ReplyKeyboardMarkup {
 		return &tbot.ReplyKeyboardMarkup{
 			ResizeKeyboard: true,
 			Keyboard: [][]tbot.KeyboardButton{
-				[]tbot.KeyboardButton{button3, button5, button6, button11},
+				[]tbot.KeyboardButton{button3, button5},
+				[]tbot.KeyboardButton{button6, button11},
+				[]tbot.KeyboardButton{button16},
 			},
 		}
 	case "seller_interface":

@@ -3,6 +3,10 @@ drop table if exists category;
 drop table if exists product_table;
 drop table if exists shopping_cart_table;
 
+--psql \! chcp 1251
+
+--insert into product_table(id_seller,product_name,product_category,product_description,product_image,product_cost,product_availability) values ('eNeros','testProduct1','Одежда и обувь','some description',pg_read_binary_file('B:\vid projects\kartinka\2691997f3e967efb601bed73ed2a320f.jpg'),19000,40);
+
 --остальное:
 create table user_table (
 	login varchar(100) PRIMARY KEY NOT NULL,
@@ -19,11 +23,11 @@ create table category (
 --для продавца:
 create table product_table (
 	id_product serial PRIMARY KEY,
-  id_seller varchar(100) REFERENCES user_table(login) NOT NULL,
+  id_seller text REFERENCES user_table(login) NOT NULL,
   product_name text NOT NULL,
   product_category text REFERENCES category(name_category) NOT NULL,
   product_description text not null default '-'::text,
-  product_image bytea not null default pg_read_binary_file('/imgs/default_image.jpg'),
+  product_image text not null default '/imgs/default_image.jpg'::text,
   product_cost int not null default 0,
   product_availability int NOT NULL
 );
@@ -47,7 +51,7 @@ insert into category(name_category) values ('Бытовая химия');
 insert into category(name_category) values ('Косметика');
 insert into category(name_category) values ('Остальные категории');
 
-
+--insert into product_table(id_seller,product_name,product_category,product_description,product_image,product_cost,product_availability) values ('eNeros','testProduct1','Одежда и обувь','some description','B:\vid projects\kartinka\2691997f3e967efb601bed73ed2a320f.jpg',19000,40);
 -- триггеры для таблицы category
 create or REPLACE function categoryUp()
   returns trigger AS
