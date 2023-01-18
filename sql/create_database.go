@@ -60,7 +60,7 @@ func CreateDataBase() {
 	Db, err = pgx.Connect(context.Background(), dbURL)
 
 	//остальное:
-	_, err = Db.Exec(context.Background(), "create table user_table(login varchar(100) PRIMARY KEY NOT NULL,password varchar(100) NOT NULL,role varchar(100) DEFAULT 'customer');")
+	_, err = Db.Exec(context.Background(), "create table user_table(login varchar(100) PRIMARY KEY NOT NULL ,password varchar(100) NOT NULL,role varchar(100) DEFAULT 'customer');")
 	if err != nil {
 		panic(err)
 	}
@@ -77,17 +77,17 @@ func CreateDataBase() {
 	}
 
 	//для покупателя:
-	_, err = Db.Exec(context.Background(), "create table shopping_cart_table(id_cart serial PRIMARY KEY,id_user varchar(100) REFERENCES user_table(login),id_product int REFERENCES product_table(id_product));")
+	_, err = Db.Exec(context.Background(), "create table shopping_cart_table(id_cart serial PRIMARY KEY,id_user varchar(100) REFERENCES user_table(login) ON DELETE CASCADE,id_product int REFERENCES product_table(id_product));")
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = Db.Exec(context.Background(), "create table favour_table(id_favour serial PRIMARY KEY,id_user varchar(100) REFERENCES user_table(login),id_product int REFERENCES product_table(id_product));")
+	_, err = Db.Exec(context.Background(), "create table favour_table(id_favour serial PRIMARY KEY,id_user varchar(100) REFERENCES user_table(login) ON DELETE CASCADE,id_product int REFERENCES product_table(id_product));")
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = Db.Exec(context.Background(), "create table ordered_products_table(id_order serial PRIMARY KEY,id_user varchar(100) REFERENCES user_table(login),id_product int REFERENCES product_table(id_product));")
+	_, err = Db.Exec(context.Background(), "create table ordered_products_table(id_order serial PRIMARY KEY,id_user varchar(100) REFERENCES user_table(login) ON DELETE CASCADE,id_product int REFERENCES product_table(id_product));")
 	if err != nil {
 		panic(err)
 	}

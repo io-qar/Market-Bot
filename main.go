@@ -112,6 +112,14 @@ func stateHandler(m *tbot.Message) {
 		case "Купить товары":
 			customer.ClientBuyAllProduct(m, client, bot)
 		}
+	case "CLIENT_FAVOR":
+		switch m.Text {
+		case "Удалить товары":
+			customer.ClientDeleteAllProductsFromFavor(m, client, bot)
+		case "Назад":
+			state[m.From.Username] = "CLIENT_INTERFACE"
+			client.SendMessage(m.Chat.ID, "Обратно к интерфейсу...", tbot.OptReplyKeyboardMarkup(makeButtons("customer_interface")))
+		}
 	case "CLIENT_SETTINGS":
 		switch m.Text {
 		case "Выход":
@@ -145,6 +153,10 @@ func stateHandler(m *tbot.Message) {
 		case "Настройки":
 			state[m.From.Username] = "CLIENT_SETTINGS"
 			client.SendMessage(m.Chat.ID, "Настройки", tbot.OptReplyKeyboardMarkup(makeButtons("customer_settings")))
+		case "Избранное":
+			client.SendMessage(m.Chat.ID, "Ваши избранные товары:", tbot.OptReplyKeyboardMarkup(makeButtons("customer_favor_cart")))
+			sql.ClientShowFavor(m, client, bot)
+			state[m.From.Username] = "CLIENT_FAVOR"
 		}
 	case "SELLER_INTERFACE":
 		switch m.Text {
@@ -184,6 +196,7 @@ func checkPassHandler(m *tbot.Message) {
 	if check {
 		client.SendMessage(m.Chat.ID, "Пароль верный!")
 		state[m.From.Username] = "CLIENT_INTERFACE"
+		customer.CallBackDataOn(client, bot)
 		customerInterfaceHandler(m)
 	} else {
 		client.SendMessage(m.Chat.ID, "Неправильный пароль")
@@ -298,6 +311,13 @@ func makeButtons(state string) *tbot.ReplyKeyboardMarkup {
 				[]tbot.KeyboardButton{button16},
 			},
 		}
+	case "customer_favor_cart":
+		return &tbot.ReplyKeyboardMarkup{
+			ResizeKeyboard: true,
+			Keyboard: [][]tbot.KeyboardButton{
+				[]tbot.KeyboardButton{button9, button10},
+			},
+		}
 	case "seller_interface":
 		return &tbot.ReplyKeyboardMarkup{
 			ResizeKeyboard: true,
@@ -316,7 +336,9 @@ func makeButtons(state string) *tbot.ReplyKeyboardMarkup {
 		return &tbot.ReplyKeyboardMarkup{
 			ResizeKeyboard: true,
 			Keyboard: [][]tbot.KeyboardButton{
-				[]tbot.KeyboardButton{button10, button7, button4, button12, button13},
+				[]tbot.KeyboardButton{button10, button7},
+				[]tbot.KeyboardButton{button4, button12},
+				[]tbot.KeyboardButton{button13},
 			},
 		}
 	case "delete_acc":
